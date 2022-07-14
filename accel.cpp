@@ -4,15 +4,17 @@
 #include "hardware/i2c.h"
 #include "pico/stdio.h"
 #include <cstdint>
-#include <stdio.h>
+#include <cstdio>
+#include <cmath>
 #define LED 25
 
 const uint8_t init_accel[] = { 0x6B, 0 };
 const uint8_t data_request[] = { 0x3B, 0 };
 const size_t init_size = 2;
 const size_t request_size = 1;
-const size_t response_size = 14;
+const size_t response_size = 6;
 const uint8_t addr = 0x68;
+const float p =  9.81 / 16383;
 uint8_t buffer[response_size];
 
 Accelerometer::Accelerometer(int i2c_port, int scl, int sda){
@@ -41,6 +43,10 @@ Accelerometer::Accelerometer(int i2c_port, int scl, int sda){
         buffer[i] = (int16_t)0;
     }
 
+    sleep_ms(100);
+
+    reset_angle();
+
     printf("done init\n");
 }
 
@@ -50,13 +56,22 @@ bool Accelerometer::update(repeating_timer_t *rt){
     i2c_write_blocking(self->port, addr, data_request, request_size, true);
     i2c_read_blocking(self->port, addr, buffer, response_size, false);
 
-    self->acc_x = (uint16_t)buffer[0]<<8 | buffer[1];
-    self->acc_y = (uint16_t)buffer[2]<<8 | buffer[3];
-    self->acc_z = (uint16_t)buffer[4]<<8 | buffer[5];
-    self->angle_x = (uint16_t)buffer[8]<<8 | buffer[9];
-    self->angle_y = (uint16_t)buffer[10]<<8 | buffer[11];
-    self->angle_z = (uint16_t)buffer[12]<<8 | buffer[13];
+    self->acc_x = (int16_t)((uint16_t)buffer[0]<<8 | buffer[1]) * p;
+    self->acc_y = (int16_t)((uint16_t)buffer[2]<<8 | buffer[3]) * p;
+    self->acc_z = (int16_t)((uint16_t)buffer[4]<<8 | buffer[5]) * p;
 
     gpio_put(LED, 0);
     return true;
+}
+
+angle_result_t Accelerometer::get_current_angle(){
+    angle_result_t res;
+    res.theta = atan2(hypotf(acc_y, acc_z), acc_x) - angle_zero.theta;
+    res.psi = atan2(hypotf(acc_x, acc_z), acc_y) - angle_zero.psi;
+    res.phi = atan2(acc_z, hypotf(acc_x, acc_y)) - angle_zero.phi;
+    return res;
+}
+
+void Accelerometer::reset_angle(){
+    angle_zero = get_current_angle();
 }
