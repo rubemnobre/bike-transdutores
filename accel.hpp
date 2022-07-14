@@ -14,9 +14,10 @@ class Accelerometer{
         int16_t angle_y;
         int16_t angle_z;
     private:
-        bool update(repeating_timer_t *rt);
+        static bool update(repeating_timer_t *rt);
         repeating_timer_t acc_timer;
-        i2c_inst *port;
+        i2c_inst_t *port; 
+        int sda;
 };
 
 #endif

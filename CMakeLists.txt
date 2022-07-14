@@ -17,3 +17,6 @@ target_link_libraries(projeto
     hardware_spi
     hardware_i2c
 )
+
+pico_enable_stdio_usb(projeto 1) 
+pico_enable_stdio_uart(projeto 0) 
