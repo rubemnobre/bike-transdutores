@@ -2,7 +2,15 @@
 #include "pico/time.h"
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
+#include <cstdint>
 #define LED 25
+
+static uint8_t init_accel[] = { 0x6B, 0 };
+static uint8_t data_request[] = { 0x3B };
+static size_t init_size = 2;
+static size_t request_size = 1;
+static size_t response_size = 14;
+static uint8_t addr = 0x68;
 
 Accelerometer::Accelerometer(int i2c_port, int scl, int sda){
     // Inicialização do LED
@@ -19,6 +27,7 @@ Accelerometer::Accelerometer(int i2c_port, int scl, int sda){
     // Inicializa a porta I2C
     auto port = i2c_port?i2c1:i2c0;
     i2c_init(port, 1e5);
+    i2c_write_blocking(port, addr, init_accel, init_size, true);
 }
 
 bool Accelerometer::update(repeating_timer_t *rt){
