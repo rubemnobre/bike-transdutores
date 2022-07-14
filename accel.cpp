@@ -28,7 +28,7 @@ Accelerometer::Accelerometer(int i2c_port, int scl, int sda){
     gpio_pull_up(sda);
 
     // Ativa a interrupção por timer para a atualização do acelerômetro
-    add_repeating_timer_ms(1000, (repeating_timer_callback_t)&Accelerometer::update, this, &acc_timer);
+    add_repeating_timer_ms(20, (repeating_timer_callback_t)&Accelerometer::update, this, &acc_timer);
 
     // Inicializa a porta I2C
     port = i2c0;
@@ -47,8 +47,8 @@ Accelerometer::Accelerometer(int i2c_port, int scl, int sda){
 bool Accelerometer::update(repeating_timer_t *rt){
     auto self = (Accelerometer *) rt->user_data;
     gpio_put(LED, 1);
-    i2c_write_timeout_us(self->port, addr, data_request, request_size, true, 10000);
-    i2c_read_timeout_us(self->port, addr, buffer, response_size, false, 10000);
+    i2c_write_blocking(self->port, addr, data_request, request_size, true);
+    i2c_read_blocking(self->port, addr, buffer, response_size, false);
 
     self->acc_x = (uint16_t)buffer[0]<<8 | buffer[1];
     self->acc_y = (uint16_t)buffer[2]<<8 | buffer[3];
